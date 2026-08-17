@@ -1,0 +1,6 @@
+{
+  "name": "BlockLocator",
+  "description": "Find your Minecraft coordinates from screenshots, world seeds, and terrain analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
