@@ -20,7 +20,7 @@ export const LocatorSection: React.FC<LocatorSectionProps> = ({
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | undefined>(undefined);
   const [fileSize, setFileSize] = useState<number | undefined>(undefined);
-  const [seed, setSeed] = useState<string>('8057211');
+  const [seed, setSeed] = useState<string>('');
   const [edition, setEdition] = useState<MinecraftEdition>('bedrock');
   const [version, setVersion] = useState<string>('1.21.x');
   const [knownCoords, setKnownCoords] = useState<KnownCoords>({});
@@ -83,6 +83,7 @@ export const LocatorSection: React.FC<LocatorSectionProps> = ({
       await minTimePromise;
       // Fallback algorithmic analysis
       const fallback = fallbackAlgorithmicAnalysis({
+        image: screenshot || undefined,
         seed,
         edition,
         version,

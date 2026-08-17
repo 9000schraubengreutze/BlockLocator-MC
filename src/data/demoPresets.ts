@@ -127,6 +127,33 @@ function createBadlandsMesaSvg(): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function createNetherBedrockCeilingSvg(): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+    <rect width="800" height="450" fill="#18181b"/>
+    <!-- Minecraft Nether Fog / Red Ambient Glow -->
+    <rect width="800" height="450" fill="#450a0a" opacity="0.4"/>
+    <!-- Bedrock Matrix Ceiling (Y=120-127) -->
+    <pattern id="bedrock" width="32" height="32" patternUnits="userSpaceOnUse">
+      <rect width="32" height="32" fill="#27272a"/>
+      <rect x="0" y="0" width="16" height="16" fill="#18181b"/>
+      <rect x="16" y="16" width="16" height="16" fill="#09090b"/>
+      <rect x="4" y="4" width="8" height="8" fill="#3f3f46"/>
+      <rect x="20" y="8" width="8" height="4" fill="#52525b"/>
+      <rect x="8" y="20" width="6" height="6" fill="#18181b"/>
+      <rect x="22" y="22" width="6" height="6" fill="#3f3f46"/>
+    </pattern>
+    <rect width="800" height="450" fill="url(#bedrock)"/>
+    <!-- Lava drip / Nether Ceiling particles -->
+    <rect x="240" y="210" width="4" height="20" fill="#f97316" rx="2"/>
+    <rect x="520" y="140" width="4" height="16" fill="#ef4444" rx="2"/>
+    <rect x="680" y="280" width="3" height="12" fill="#f97316" rx="1"/>
+    <!-- Bedrock Text Indicator -->
+    <rect x="220" y="405" width="360" height="32" fill="rgba(0,0,0,0.7)" rx="6" stroke="#52525b" stroke-width="1"/>
+    <text x="400" y="426" fill="#e4e4e7" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">NETHER ROOF • BEDROCK CEILING (Y=120-127)</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export const DEMO_PRESETS: DemoPreset[] = [
   {
     id: 'demo-plains-village',
@@ -436,6 +463,50 @@ export const DEMO_PRESETS: DemoPreset[] = [
       sunElevationAngle: 38,
       cloudDirection: 'West (-X drift)',
       rawAiReasoning: 'Bounded seed search matched Badlands plateau at (640, 85, -1280).',
+      timestamp: Date.now(),
+    },
+  },
+  {
+    id: 'demo-nether-bedrock',
+    title: 'Nether Bedrock Decke (Pattern-Cracking-Analyse)',
+    subtitle: 'Demonstriert ehrliche Erkennung von Bedrock-Textur & Nether-Höhenebene Y: 120–127',
+    badge: 'Bedrock Decke (Ehrlich)',
+    edition: 'bedrock',
+    version: '1.21.x',
+    seed: '',
+    imageThumbnail: createNetherBedrockCeilingSvg(),
+    description: 'Screenshot ausschließlich von der Nether-Bedrock-Decke (Y=120-127). Zeigt, wie BlockLocator die Dimension und Höhe exakt erkennt, aber ehrlich über die mathematischen Voraussetzungen für horizontales Pattern-Cracking aufklärt.',
+    expectedResult: {
+      status: 'inconclusive',
+      candidates: [],
+      features: [
+        { id: 'f1', name: 'Nether Bedrock Decke (Y ≈ 120–127)', category: 'geology', confidence: 99, tagColor: 'purple' },
+        { id: 'f2', name: 'Bedrock Block-Textur (minecraft:bedrock)', category: 'geology', confidence: 98, tagColor: 'slate' },
+        { id: 'f3', name: 'Nether Dimension (Geschlossene Decke)', category: 'elevation', confidence: 96, tagColor: 'purple' },
+        { id: 'f4', name: 'Kein Himmelszyklus / Horizont', category: 'celestial', confidence: 94, tagColor: 'yellow' },
+      ],
+      overallConfidence: 40.0,
+      seedProvided: false,
+      seedUsed: null,
+      edition: 'bedrock',
+      version: '1.21.x',
+      referencePointUsed: false,
+      notes: [
+        'Nether-Bedrock-Decke (Höhenebene Y ≈ 120–127) erfolgreich identifiziert.',
+        'Bedrock-Pattern-Cracking: Zur Bestimmung horizontaler X/Z-Koordinaten anhand des Bedrock-Musters ist zwingend eine unverzerrte 2D-Draufsicht (senkrecht von oben) eines 21x21-Block-Chunks sowie der exakte Welt-Seed erforderlich.',
+        'Aus einem einzelnen schrägen oder unvollständigen Screenshot können keine horizontalen X/Z-Koordinaten erraten werden. BlockLocator erfindet keine falschen Koordinaten.',
+      ],
+      commands: {
+        tpSelf: '/tp @s ~ 125 ~',
+        tpPlayer: '/tp @p ~ 125 ~',
+        setWorldSpawn: '/setworldspawn ~ ~ ~',
+        spawnpoint: '/spawnpoint @s ~ ~ ~',
+        locateBiome: '/locate biome minecraft:nether_wastes',
+      },
+      timeOfDay: 'Nether (Kein Tag-/Nacht-Zyklus)',
+      sunElevationAngle: 0,
+      cloudDirection: 'Keine (Nether-Dimension)',
+      rawAiReasoning: 'Nether-Bedrock-Decke erkannt. Für horizontales Bedrock-Pattern-Cracking wird ein senkrechter 2D-Draufsicht-Raster-Scan benötigt.',
       timestamp: Date.now(),
     },
   },

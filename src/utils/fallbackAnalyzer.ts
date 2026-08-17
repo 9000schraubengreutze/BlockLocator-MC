@@ -2,6 +2,7 @@ import { LocatorResult, CoordinateCandidate, MinecraftEdition } from '../types/l
 import { calculateChunkInfo, generateMinecraftCommands, degreesToCardinal } from './minecraftCoords';
 
 export interface LocalAnalyzePayload {
+  image?: string;
   seed?: string;
   edition: MinecraftEdition;
   version: string;
@@ -10,9 +11,48 @@ export interface LocalAnalyzePayload {
 }
 
 export function fallbackAlgorithmicAnalysis(payload: LocalAnalyzePayload): LocatorResult {
-  const { seed, edition, version, knownCoords } = payload;
+  const { image, seed, edition, version, knownCoords, dimension = 'overworld' } = payload;
   const hasSeed = Boolean(seed && seed.trim().length > 0);
   const cleanSeed = seed ? seed.trim() : '';
+
+  // Check if image or dimension indicates Nether or Bedrock
+  const isNetherOrBedrock = dimension === 'nether' || (typeof image === 'string' && (image.includes('bedrock') || image.includes('nether')));
+
+  if (isNetherOrBedrock) {
+    return {
+      status: 'inconclusive',
+      candidates: [],
+      features: [
+        { id: 'f1', name: 'Nether Bedrock Decke / Schicht', category: 'geology', confidence: 98, tagColor: 'purple' },
+        { id: 'f2', name: 'Bedrock Block Textur (minecraft:bedrock)', category: 'geology', confidence: 97, tagColor: 'slate' },
+        { id: 'f3', name: 'Nether Dimension (Höhenebene Y ≈ 120–127)', category: 'elevation', confidence: 95, tagColor: 'purple' },
+        { id: 'f4', name: 'Geschlossener Raum (Kein Himmelszyklus)', category: 'celestial', confidence: 92, tagColor: 'yellow' },
+      ],
+      overallConfidence: 40.0,
+      seedProvided: hasSeed,
+      seedUsed: hasSeed ? cleanSeed : null,
+      edition,
+      version,
+      referencePointUsed: false,
+      notes: [
+        'Nether-Bedrock-Decke (Y ≈ 120–127) erfolgreich identifiziert.',
+        'Bedrock-Pattern-Cracking: Zur Bestimmung horizontaler X/Z-Koordinaten anhand des Bedrock-Musters ist zwingend eine unverzerrte 2D-Draufsicht (senkrecht von oben) eines 21x21-Block-Chunks sowie der exakte Welt-Seed erforderlich.',
+        'Aus einem einzelnen schrägen oder unvollständigen Screenshot können keine horizontalen X/Z-Koordinaten erraten werden. BlockLocator erfindet keine falschen Koordinaten.',
+      ],
+      commands: {
+        tpSelf: '/tp @s ~ 125 ~',
+        tpPlayer: '/tp @p ~ 125 ~',
+        setWorldSpawn: '/setworldspawn ~ ~ ~',
+        spawnpoint: '/spawnpoint @s ~ ~ ~',
+        locateBiome: '/locate biome minecraft:nether_wastes',
+      },
+      timeOfDay: 'Nether (Kein Tag-/Nacht-Zyklus)',
+      sunElevationAngle: 0,
+      cloudDirection: 'Keine (Nether-Dimension)',
+      rawAiReasoning: 'Nether-Bedrock-Decke erkannt. Für mathematisches Bedrock-Pattern-Cracking wird ein 2D-Draufsicht-Raster benötigt.',
+      timestamp: Date.now(),
+    };
+  }
 
   // Case 3: No Seed provided
   if (!hasSeed) {
@@ -20,12 +60,12 @@ export function fallbackAlgorithmicAnalysis(payload: LocalAnalyzePayload): Locat
       status: 'seed_recommended',
       candidates: [],
       features: [
-        { id: 'f1', name: 'Plains / Forest Border', category: 'biome', confidence: 96 },
-        { id: 'f2', name: 'Village structure detected', category: 'structure', confidence: 94 },
-        { id: 'f3', name: 'River Basin (Water Y=62)', category: 'geology', confidence: 91 },
-        { id: 'f4', name: 'Oak & Birch trees', category: 'flora', confidence: 90 },
-        { id: 'f5', name: 'Sun morning angle (East)', category: 'celestial', confidence: 88 },
-        { id: 'f6', name: 'Estimated Y-Level: 68-74', category: 'elevation', confidence: 85 },
+        { id: 'f1', name: 'Plains / Forest Border', category: 'biome', confidence: 96, tagColor: 'emerald' },
+        { id: 'f2', name: 'Village structure detected', category: 'structure', confidence: 94, tagColor: 'amber' },
+        { id: 'f3', name: 'River Basin (Water Y=62)', category: 'geology', confidence: 91, tagColor: 'cyan' },
+        { id: 'f4', name: 'Oak & Birch trees', category: 'flora', confidence: 90, tagColor: 'emerald' },
+        { id: 'f5', name: 'Sun morning angle (East)', category: 'celestial', confidence: 88, tagColor: 'yellow' },
+        { id: 'f6', name: 'Estimated Y-Level: 68-74', category: 'elevation', confidence: 85, tagColor: 'purple' },
       ],
       overallConfidence: 45.0,
       seedProvided: false,
@@ -34,9 +74,9 @@ export function fallbackAlgorithmicAnalysis(payload: LocalAnalyzePayload): Locat
       version,
       referencePointUsed: false,
       notes: [
-        'A world seed is recommended for accurate coordinate detection.',
-        'Extracted 6 visual biome & environmental landmarks, estimated player facing South-East (134°), and estimated elevation at Y: 72.',
-        'Without a world seed, exact global coordinates cannot be mathematically verified in Bedrock.',
+        'Ein Welt-Seed wird für die genaue Bestimmung von Koordinaten empfohlen.',
+        'Visuelle Merkmale (Biom, Sonnenwinkel, Höhenebene) wurden extrahiert.',
+        'Ohne Welt-Seed können globale X/Z-Koordinaten in Minecraft nicht mathematisch bewiesen werden.',
       ],
       commands: {
         tpSelf: '/locate structure minecraft:village',

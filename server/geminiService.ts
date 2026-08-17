@@ -51,21 +51,40 @@ Analyze this Minecraft screenshot for the ${edition.toUpperCase()} Edition (vers
 User Provided Info:
 - World Seed: ${hasSeed ? cleanSeed : 'NONE PROVIDED (Crucial Note: without a seed, absolute world coordinates cannot be deterministically proven!)'}
 - Known Reference Coordinates: ${knownCoords && (knownCoords.x !== undefined || knownCoords.z !== undefined) ? `X: ${knownCoords.x}, Y: ${knownCoords.y}, Z: ${knownCoords.z}` : 'None'}
+- Selected Dimension: ${dimension}
 
 Your instructions:
 1. Examine the screenshot carefully. Identify:
-   - Biome(s) visible (e.g., Plains, Cherry Grove, Badlands, Jagged Peaks, Jungle, Desert, Meadow, Forest, Dark Oak, etc.)
+   - Blocks, Biome(s) & Dimension visible:
+     * Overworld: Plains, Mountains, Oceans, Forests, Deserts, Badlands, Caves, Deepslate, etc.
+     * Nether: Bedrock Ceiling (Y=120-128), Bedrock Floor (Y=0-5), Nether Wastes, Crimson/Warped Forest, Soul Sand Valley, Basalt Deltas, Nether Fortress, Bastion Remnant, Lava Sea (Y=31).
+     * The End: End Stone, Obsidian Pillars, End City, Chorus Plants, Void (Y < 0).
    - Man-made structures (Village, Pillager Outpost, Desert Pyramid, Jungle Temple, Ruined Portal, Trail Ruins, Player builds)
    - Natural landmarks (river bends, ravines, mountain ridgelines, waterfalls, cave entrances, ocean shorelines)
-   - Sun/Moon position, cloud drift, shadows (in Minecraft, clouds drift West; Sun rises in East and sets in West)
-   - Estimated player eye-level / surface Y elevation (Sea level = Y 62; mountains > Y 100; valleys ~ Y 64-75)
+   - Celestial & Environmental markers: Sun/Moon position, cloud drift, lava glow, fog density.
+   - Estimated player eye-level / surface Y elevation:
+     * Overworld Sea level = Y 62; Mountains > Y 100; Underground = Y -64 to 60.
+     * Nether Ceiling Bedrock = Y 120 to 127; Nether Floor Bedrock = Y 0 to 4; Nether Lava Sea = Y 31.
    - Facing angle in degrees (0 = South, 90 = West, 180 = North, 270 = East) and cardinal direction.
-2. If NO seed was provided:
+
+2. CRITICAL RULES FOR BEDROCK / NETHER CEILING / INSUFFICIENT LANDMARKS:
+   - If the screenshot shows BEDROCK (e.g. Nether ceiling, bedrock floor, or pure bedrock texture):
+     * Recognize the block as Bedrock (minecraft:bedrock) and dimension as The Nether (or Overworld bedrock base).
+     * Set elevation properly to Y: 120-127 for Nether roof, or Y: 0-4 / Y: -64 for floor. NEVER assign Overworld surface Y=72 to bedrock!
+     * Bedrock Pattern Cracking (determining exact X/Z coordinates from bedrock formations) mathematically requires:
+       (a) The exact Minecraft World Seed.
+       (b) A flat, perpendicular (top-down) 2D orthogonal grid scan of at least 16x16 or 21x21 continuous blocks.
+     * If the screenshot is a perspective view, close-up texture, or lacks a full 2D chunk grid:
+       YOU MUST SET "status": "inconclusive" (or "seed_recommended" if no seed was provided) with "candidates": [].
+       DO NOT invent fake or arbitrary X/Z coordinates! State honestly in notes why horizontal coordinates cannot be guessed from an angled bedrock texture.
+   - If the screenshot is looking at a single solid wall (e.g. dirt/stone/bedrock) with zero horizon or terrain topology:
+     * Return "status": "inconclusive", "candidates": [].
+
+3. If NO seed was provided:
    - State clearly that without a world seed, exact global coordinates cannot be determined.
-   - Return status: "seed_recommended".
-3. If the screenshot is too dark, blurry, looking at a single solid block (e.g. black dirt wall) with zero identifiable terrain or horizon:
-   - Return status: "inconclusive".
-4. If a valid Seed was provided:
+   - Return status: "seed_recommended", "candidates": [].
+
+4. If a valid Seed was provided with recognizable terrain features:
    - If clear unique features exist, calculate the most plausible coordinate match (e.g. X: 1842, Y: 72, Z: -391).
    - If multiple plausible spots exist with similar terrain, provide 2-3 candidate locations with realistic confidence percentages.
 
@@ -74,33 +93,33 @@ Return your response strictly in the following JSON format:
 {
   "status": "found" | "multiple_candidates" | "seed_recommended" | "inconclusive",
   "overallConfidence": 97.4,
-  "facing": "South-East",
+  "facing": "South-East" | "Up" | "Down" | "North" | "South" | "East" | "West",
   "facingAngleDeg": 134,
   "pitchDeg": -4,
-  "timeOfDay": "Morning (~08:30)",
-  "cloudDirection": "West (-X)",
+  "timeOfDay": "Morning (~08:30)" | "Nether (No celestial cycle)",
+  "cloudDirection": "West (-X)" | "None (Nether/Underground)",
   "features": [
-    {"name": "Plains biome", "category": "biome", "confidence": 98},
-    {"name": "Village (Plains)", "category": "structure", "confidence": 95},
-    {"name": "Mountain ridge", "category": "geology", "confidence": 92}
+    {"name": "Nether Bedrock Ceiling", "category": "geology", "confidence": 99},
+    {"name": "Bedrock block pattern (minecraft:bedrock)", "category": "geology", "confidence": 98},
+    {"name": "Nether dimension", "category": "biome", "confidence": 96}
   ],
   "candidates": [
     {
       "rank": 1,
       "x": 1842,
-      "y": 72,
+      "y": 125,
       "z": -391,
       "confidence": 97.4,
-      "biome": "Plains",
-      "subBiome": "Meadow Foothills",
-      "elevationDescription": "Y: 72 (Surface level)",
-      "matchingLandmarks": ["Plains Village", "River S-Bend", "Oak Trees"],
-      "explanation": "Seed ${cleanSeed || '8057211'} terrain generator aligns with visual river bend and village structure."
+      "biome": "Nether Wastes",
+      "subBiome": "Nether Ceiling (Bedrock Layer)",
+      "elevationDescription": "Y: 125 (Nether Ceiling)",
+      "matchingLandmarks": ["Bedrock Matrix"],
+      "explanation": "Seed analysis..."
     }
   ],
   "notes": [
-    "Seed ${cleanSeed || 'N/A'} correlated with Bedrock ${version} generation algorithm.",
-    "Facing triangulated from sun azimuth and shadow direction."
+    "Nether Bedrock Decke erkannt (Y ≈ 120-127).",
+    "Bedrock-Pattern-Cracking erfordert einen exakten Welt-Seed und eine 2D-Draufsicht eines 21x21-Blocks Chunks."
   ],
   "reasoningSummary": "Brief technical summary"
 }
@@ -128,15 +147,19 @@ Return your response strictly in the following JSON format:
       const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, responseText];
       const parsed = JSON.parse(jsonMatch[1] || responseText);
 
-      // Build robust candidates
-      const rawCandidates = Array.isArray(parsed.candidates) && parsed.candidates.length > 0
+      // Check if status is inconclusive or seed_recommended
+      const status: 'found' | 'multiple_candidates' | 'seed_recommended' | 'inconclusive' =
+        parsed.status || (hasSeed ? 'found' : 'seed_recommended');
+
+      // Build robust candidates only if status is found or multiple_candidates
+      const rawCandidates = (status === 'found' || status === 'multiple_candidates') && Array.isArray(parsed.candidates)
         ? parsed.candidates
         : [];
 
       const formattedCandidates: CoordinateCandidate[] = rawCandidates.map((c: any, index: number) => {
-        const x = typeof c.x === 'number' ? c.x : 1842;
-        const y = typeof c.y === 'number' ? c.y : 72;
-        const z = typeof c.z === 'number' ? c.z : -391;
+        const x = typeof c.x === 'number' ? c.x : 0;
+        const y = typeof c.y === 'number' ? c.y : (dimension === 'nether' ? 125 : 72);
+        const z = typeof c.z === 'number' ? c.z : 0;
         const confidence = typeof c.confidence === 'number' ? c.confidence : 90 - index * 10;
         const facingDeg = typeof parsed.facingAngleDeg === 'number' ? parsed.facingAngleDeg : 135;
 
@@ -150,11 +173,11 @@ Return your response strictly in the following JSON format:
           facing: parsed.facing || degreesToCardinal(facingDeg),
           facingAngleDeg: facingDeg,
           pitchDeg: typeof parsed.pitchDeg === 'number' ? parsed.pitchDeg : -5,
-          biome: c.biome || 'Plains',
-          subBiome: c.subBiome || 'Overworld Surface',
+          biome: c.biome || (dimension === 'nether' ? 'Nether Wastes' : 'Plains'),
+          subBiome: c.subBiome || (dimension === 'nether' ? 'Nether Ceiling' : 'Overworld Surface'),
           chunk: calculateChunkInfo(x, z),
           distanceFromSpawn: Math.round(Math.hypot(x, z)),
-          elevationDescription: c.elevationDescription || `Y: ${y} (Surface)`,
+          elevationDescription: c.elevationDescription || `Y: ${y}`,
           matchingLandmarks: Array.isArray(c.matchingLandmarks) ? c.matchingLandmarks : ['Terrain match'],
           explanation: c.explanation || 'Calculated from visual feature matching.',
         };
@@ -170,29 +193,29 @@ Return your response strictly in the following JSON format:
           }))
         : [];
 
-      const primaryCandidate = formattedCandidates[0];
-      const targetCoords = primaryCandidate || { x: 1842, y: 72, z: -391, biome: 'Plains' };
-
-      const status = parsed.status || (hasSeed ? (formattedCandidates.length > 1 ? 'multiple_candidates' : 'found') : 'seed_recommended');
+      const primaryCandidate = formattedCandidates.length > 0 ? formattedCandidates[0] : undefined;
+      const targetCoords = primaryCandidate || { x: 0, y: dimension === 'nether' ? 125 : 72, z: 0, biome: dimension === 'nether' ? 'nether_wastes' : 'plains' };
 
       return {
-        status,
+        status: status === 'inconclusive' || status === 'seed_recommended' ? status : (formattedCandidates.length > 1 ? 'multiple_candidates' : (formattedCandidates.length === 1 ? 'found' : 'inconclusive')),
         primaryMatch: primaryCandidate,
         candidates: formattedCandidates,
         features,
-        overallConfidence: typeof parsed.overallConfidence === 'number' ? parsed.overallConfidence : (hasSeed ? 95.0 : 45.0),
+        overallConfidence: typeof parsed.overallConfidence === 'number' ? parsed.overallConfidence : (status === 'inconclusive' || status === 'seed_recommended' ? 45.0 : (hasSeed ? 95.0 : 45.0)),
         seedProvided: hasSeed,
         seedUsed: hasSeed ? cleanSeed : null,
         edition,
         version,
         referencePointUsed: Boolean(knownCoords && (knownCoords.x !== undefined || knownCoords.z !== undefined)),
-        notes: Array.isArray(parsed.notes) ? parsed.notes : [
-          hasSeed ? `Seed ${cleanSeed} correlated with terrain features.` : 'A world seed is recommended for accurate coordinate detection.',
+        notes: Array.isArray(parsed.notes) && parsed.notes.length > 0 ? parsed.notes : [
+          status === 'inconclusive'
+            ? 'Bedrock-/Terrain-Muster erfordert einen exakten Welt-Seed und eine vollständige Chunk-Draufsicht für Pattern-Cracking.'
+            : (hasSeed ? `Seed ${cleanSeed} correlated with terrain features.` : 'A world seed is recommended for accurate coordinate detection.'),
         ],
         commands: generateMinecraftCommands(targetCoords.x, targetCoords.y, targetCoords.z, targetCoords.biome),
-        timeOfDay: parsed.timeOfDay || 'Daylight (~10:00 in-game)',
-        sunElevationAngle: 45,
-        cloudDirection: parsed.cloudDirection || 'West (-X drift)',
+        timeOfDay: parsed.timeOfDay || (dimension === 'nether' ? 'Nether (No sky cycle)' : 'Daylight (~10:00 in-game)'),
+        sunElevationAngle: typeof parsed.sunElevationAngle === 'number' ? parsed.sunElevationAngle : (dimension === 'nether' ? 0 : 45),
+        cloudDirection: parsed.cloudDirection || (dimension === 'nether' ? 'None (Enclosed Nether)' : 'West (-X drift)'),
         rawAiReasoning: parsed.reasoningSummary || 'Multimodal vision model analyzed terrain and landmarks.',
         timestamp: Date.now(),
       };
