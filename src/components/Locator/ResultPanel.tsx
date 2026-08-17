@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Share2,
   Sliders,
+  Download,
+  FileJson,
 } from 'lucide-react';
 import { LocatorResult, CoordinateCandidate, MinecraftEdition } from '../../types/locator';
 import { MultipleCandidates } from './MultipleCandidates';
@@ -18,6 +20,7 @@ import { WorldMapCanvas } from './WorldMapCanvas';
 import { FeatureAnalysisTags } from './FeatureAnalysisTags';
 import { CommandsModal } from './CommandsModal';
 import { InconclusiveCard } from './InconclusiveCard';
+import { exportReportAsJson } from '../../utils/exportReport';
 
 interface ResultPanelProps {
   result: LocatorResult;
@@ -40,6 +43,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
   const [commandsModalOpen, setCommandsModalOpen] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // If status is seed_recommended or inconclusive without candidates, render the honest informative card
   if (result.status === 'seed_recommended' || result.status === 'inconclusive' || !activeCandidate) {
@@ -49,6 +53,10 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
           result={result}
           onRetry={onReset}
           onOpenSeedGuide={onOpenSeedGuide}
+          onExportReport={() => {
+            const fileName = exportReportAsJson(result, null);
+            onShowToast(`Report exported: ${fileName}`, 'success');
+          }}
         />
         {result.features && result.features.length > 0 && (
           <FeatureAnalysisTags
@@ -76,6 +84,19 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
     setCopiedCmd(true);
     onShowToast(`Copied: ${cmd}`, 'success');
     setTimeout(() => setCopiedCmd(false), 2000);
+  };
+
+  const handleExportJson = () => {
+    setIsExporting(true);
+    try {
+      const fileName = exportReportAsJson(result, activeCandidate);
+      onShowToast(`JSON report downloaded: ${fileName}`, 'success');
+    } catch (err) {
+      console.error('Failed to export JSON report:', err);
+      onShowToast('Failed to generate export file', 'info');
+    } finally {
+      setTimeout(() => setIsExporting(false), 1500);
+    }
   };
 
   return (
@@ -194,6 +215,18 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
           >
             {copiedCmd ? <Check className="w-4 h-4 text-white" /> : <Terminal className="w-4 h-4" />}
             <span>{copiedCmd ? 'Command Copied' : 'Copy Minecraft Command'}</span>
+          </button>
+
+          {/* Export JSON Report */}
+          <button
+            type="button"
+            onClick={handleExportJson}
+            disabled={isExporting}
+            className="px-4 py-3 rounded-xl font-medium text-xs sm:text-sm text-emerald-300 hover:text-emerald-200 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 hover:border-emerald-400 transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            title="Download full JSON report containing coordinates, biome, chunks, and detected features"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>{isExporting ? 'Exporting...' : 'Export JSON'}</span>
           </button>
 
           {/* More Commands Drawer */}

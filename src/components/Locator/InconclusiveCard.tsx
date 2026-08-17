@@ -1,17 +1,19 @@
 import React from 'react';
-import { AlertTriangle, HelpCircle, ArrowRight, BookOpen, Hash, RefreshCw } from 'lucide-react';
+import { AlertTriangle, HelpCircle, ArrowRight, BookOpen, Hash, RefreshCw, Download } from 'lucide-react';
 import { LocatorResult } from '../../types/locator';
 
 interface InconclusiveCardProps {
   result: LocatorResult;
   onRetry: () => void;
   onOpenSeedGuide: () => void;
+  onExportReport?: () => void;
 }
 
 export const InconclusiveCard: React.FC<InconclusiveCardProps> = ({
   result,
   onRetry,
   onOpenSeedGuide,
+  onExportReport,
 }) => {
   const isNoSeed = result.status === 'seed_recommended';
 
@@ -66,10 +68,21 @@ export const InconclusiveCard: React.FC<InconclusiveCardProps> = ({
           <span>How to Find Your Seed in Bedrock</span>
         </button>
 
+        {onExportReport && (
+          <button
+            type="button"
+            onClick={onExportReport}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-semibold text-emerald-300 hover:text-emerald-200 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 transition-colors flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Export Analysis JSON</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onRetry}
-          className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center justify-center gap-2 ml-auto"
         >
           <RefreshCw className="w-4 h-4" />
           <span>Search Again with Seed</span>

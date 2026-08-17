@@ -1,4 +1,4 @@
-import { ChunkInfo, MinecraftCommands } from '../types/locator';
+import type { ChunkInfo, MinecraftCommands } from '../types/locator.ts';
 
 export function calculateChunkInfo(x: number, z: number): ChunkInfo {
   const chunkX = Math.floor(x / 16);

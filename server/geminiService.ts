@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
-import { LocatorResult, CoordinateCandidate, AnalysisFeature, MinecraftEdition } from '../src/types/locator';
-import { calculateChunkInfo, generateMinecraftCommands, degreesToCardinal } from '../src/utils/minecraftCoords';
+import type { LocatorResult, CoordinateCandidate, AnalysisFeature, MinecraftEdition } from '../src/types/locator.ts';
+import { calculateChunkInfo, generateMinecraftCommands, degreesToCardinal } from '../src/utils/minecraftCoords.ts';
 
 const apiKey = process.env.GEMINI_API_KEY;
 let ai: GoogleGenAI | null = null;

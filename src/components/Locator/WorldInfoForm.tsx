@@ -142,6 +142,8 @@ export const WorldInfoForm: React.FC<WorldInfoFormProps> = ({
               onChange={(e) => onVersionChange(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 focus:border-emerald-500 text-slate-100 text-sm appearance-none cursor-pointer pr-10 font-mono"
             >
+              <option value="26.2">26.2 (Preview / Next Update)</option>
+              <option value="26.1.2">26.1.2 (Latest Bedrock Release)</option>
               <option value="1.21.x">1.21.x (Tricky Trials)</option>
               <option value="1.20.x">1.20.x (Trails & Tales)</option>
               <option value="1.19.x">1.19.x (The Wild Update)</option>
