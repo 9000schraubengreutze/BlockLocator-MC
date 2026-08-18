@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Hash, Layers, HelpCircle, ChevronDown, ChevronUp, MapPin, Globe, Sparkles } from 'lucide-react';
+import { Hash, Layers, HelpCircle, ChevronDown, ChevronUp, MapPin, Globe, Sparkles, Terminal, Check } from 'lucide-react';
 import { MinecraftEdition, Dimension, KnownCoords } from '../../types/locator';
+import { parseF3Text } from '../../utils/bedrockPatternCracker';
 
 interface WorldInfoFormProps {
   seed: string;
@@ -29,6 +30,8 @@ export const WorldInfoForm: React.FC<WorldInfoFormProps> = ({
 }) => {
   const [showKnownCoords, setShowKnownCoords] = useState(false);
   const [seedHelpOpen, setSeedHelpOpen] = useState(false);
+  const [f3PasteText, setF3PasteText] = useState('');
+  const [showF3Box, setShowF3Box] = useState(false);
 
   const handleRandomSeed = () => {
     // Generate a realistic 64-bit style seed
@@ -42,6 +45,24 @@ export const WorldInfoForm: React.FC<WorldInfoFormProps> = ({
       ...knownCoords,
       [field]: isNaN(num as number) ? '' : num,
     });
+  };
+
+  const handleApplyF3Text = () => {
+    const parsed = parseF3Text(f3PasteText);
+    if (parsed.found) {
+      onKnownCoordsChange({
+        ...knownCoords,
+        x: parsed.x,
+        y: parsed.y ?? knownCoords.y,
+        z: parsed.z,
+      });
+      if (parsed.biome && parsed.biome.includes('nether')) {
+        onDimensionChange('nether');
+      }
+      setShowKnownCoords(true);
+      setShowF3Box(false);
+      setF3PasteText('');
+    }
   };
 
   return (
@@ -263,6 +284,47 @@ export const WorldInfoForm: React.FC<WorldInfoFormProps> = ({
                 />
               </div>
             </div>
+
+            <div className="pt-1 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowF3Box(!showF3Box)}
+                className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Terminal className="w-3 h-3" />
+                {showF3Box ? 'F3-Eingabe schließen' : 'F3 Debug Text / Chat einfügen'}
+              </button>
+
+              {(knownCoords.x !== undefined || knownCoords.z !== undefined) && (
+                <button
+                  type="button"
+                  onClick={() => onKnownCoordsChange({})}
+                  className="text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  Koordinaten leeren
+                </button>
+              )}
+            </div>
+
+            {showF3Box && (
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-cyan-500/30 space-y-2 animate-in fade-in duration-150">
+                <textarea
+                  rows={2}
+                  value={f3PasteText}
+                  onChange={(e) => setF3PasteText(e.target.value)}
+                  placeholder="F3 Textzeile (z.B. XYZ: 120 / 64 / -340 oder Block: 120 64 -340)..."
+                  className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-100 placeholder-slate-500 font-mono text-[11px] focus:border-cyan-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyF3Text}
+                  className="w-full py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow transition-all"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Aus F3-Text übernehmen</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

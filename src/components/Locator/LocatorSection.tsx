@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Sparkles, MapPin, Loader2, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
-import { MinecraftEdition, Dimension, KnownCoords, LocatorResult, DemoPreset } from '../../types/locator';
+import { MinecraftEdition, Dimension, KnownCoords, LocatorResult, DemoPreset, AnalysisMode } from '../../types/locator';
 import { ScreenshotUploader } from './ScreenshotUploader';
 import { WorldInfoForm } from './WorldInfoForm';
 import { AnalysisProgress } from './AnalysisProgress';
 import { ResultPanel } from './ResultPanel';
+import { AnalysisModeSelector } from './AnalysisModeSelector';
+import { NetherRoofSection } from './NetherRoof/NetherRoofSection';
 import { DEMO_PRESETS } from '../../data/demoPresets';
 import { fallbackAlgorithmicAnalysis } from '../../utils/fallbackAnalyzer';
 
@@ -17,6 +19,7 @@ export const LocatorSection: React.FC<LocatorSectionProps> = ({
   onShowToast,
   onOpenSeedGuide,
 }) => {
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('nether_roof_pattern');
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | undefined>(undefined);
   const [fileSize, setFileSize] = useState<number | undefined>(undefined);
@@ -29,6 +32,14 @@ export const LocatorSection: React.FC<LocatorSectionProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [result, setResult] = useState<LocatorResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // When mode is changed, sync dimension
+  const handleSelectMode = (mode: AnalysisMode) => {
+    setAnalysisMode(mode);
+    if (mode === 'overworld') setDimension('overworld');
+    else if (mode === 'nether' || mode === 'nether_roof_pattern') setDimension('nether');
+    else if (mode === 'the_end') setDimension('the_end');
+  };
 
   // Load a preset directly
   const handleSelectPreset = (presetId: string) => {
@@ -110,106 +121,121 @@ export const LocatorSection: React.FC<LocatorSectionProps> = ({
   return (
     <section id="locator" className="py-16 md:py-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Section Header */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-emerald-400 mb-3">
+      <div className="text-center max-w-2xl mx-auto mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-purple-400 mb-3">
           <MapPin className="w-3.5 h-3.5" />
-          BlockLocator Engine
+          BlockLocator Analysis Engine
         </div>
         <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Analyze & Determine Coordinates
+          Minecraft Coordinate Triangulation
         </h2>
         <p className="text-slate-400 text-xs sm:text-sm mt-2">
-          Upload a clear screenshot with horizon, biomes or structures for optimal seed correlation.
+          Deterministische Seed-Pattern-Suche & Geländekartografie ohne Halluzinationen.
         </p>
       </div>
 
-      {/* Main Content Area */}
-      {!result && !isAnalyzing ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Screenshot Upload Area */}
-          <div className="lg:col-span-7 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-xl backdrop-blur-xl flex flex-col justify-between">
-            <ScreenshotUploader
-              screenshot={screenshot}
-              fileName={fileName}
-              fileSize={fileSize}
-              onScreenshotChange={(base64, name, size) => {
-                setScreenshot(base64);
-                setFileName(name);
-                setFileSize(size);
-              }}
-              onSelectPreset={handleSelectPreset}
-            />
-          </div>
+      {/* Analysis Mode Selector */}
+      <AnalysisModeSelector
+        currentMode={analysisMode}
+        onSelectMode={handleSelectMode}
+      />
 
-          {/* Right Column: World Information & Actions */}
-          <div className="lg:col-span-5 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-xl backdrop-blur-xl flex flex-col justify-between space-y-6">
-            <div>
-              <div className="pb-4 border-b border-slate-800/80 mb-5">
-                <h3 className="text-base font-bold text-slate-100">
-                  World Information
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Specify world seed and version parameters
-                </p>
-              </div>
-
-              <WorldInfoForm
-                seed={seed}
-                onSeedChange={setSeed}
-                edition={edition}
-                onEditionChange={setEdition}
-                version={version}
-                onVersionChange={setVersion}
-                knownCoords={knownCoords}
-                onKnownCoordsChange={setKnownCoords}
-                dimension={dimension}
-                onDimensionChange={setDimension}
+      {/* Mode 1: Nether Roof – Bedrock Pattern Cracking (Zero Hallucination) */}
+      {analysisMode === 'nether_roof_pattern' ? (
+        <NetherRoofSection
+          onShowToast={onShowToast}
+          onOpenSeedGuide={onOpenSeedGuide}
+        />
+      ) : (
+        /* Mode 2: Overworld / Nether / End Terrain & Horizon Locator */
+        !result && !isAnalyzing ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Column: Screenshot Upload Area */}
+            <div className="lg:col-span-7 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-xl backdrop-blur-xl flex flex-col justify-between">
+              <ScreenshotUploader
+                screenshot={screenshot}
+                fileName={fileName}
+                fileSize={fileSize}
+                onScreenshotChange={(base64, name, size) => {
+                  setScreenshot(base64);
+                  setFileName(name);
+                  setFileSize(size);
+                }}
+                onSelectPreset={handleSelectPreset}
               />
             </div>
 
-            {/* Locate Me Action Button */}
-            <div className="pt-4 border-t border-slate-800/80 space-y-3">
-              <button
-                type="button"
-                disabled={!screenshot || isAnalyzing}
-                onClick={handleStartAnalysis}
-                className={`w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-xl cursor-pointer ${
-                  screenshot && !isAnalyzing
-                    ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-950/60 border border-emerald-400/40 hover:scale-[1.01] active:scale-[0.99]'
-                    : 'bg-slate-800/60 border border-slate-700/50 text-slate-500 cursor-not-allowed'
-                }`}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Analyzing...</span>
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="w-5 h-5" />
-                    <span>Locate Me</span>
-                  </>
-                )}
-              </button>
+            {/* Right Column: World Information & Actions */}
+            <div className="lg:col-span-5 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-xl backdrop-blur-xl flex flex-col justify-between space-y-6">
+              <div>
+                <div className="pb-4 border-b border-slate-800/80 mb-5">
+                  <h3 className="text-base font-bold text-slate-100">
+                    World Information
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Specify world seed and version parameters
+                  </p>
+                </div>
 
-              {!screenshot && (
-                <p className="text-[11px] text-center text-slate-400">
-                  Please upload a screenshot or pick a demo preset above to activate analysis.
-                </p>
-              )}
+                <WorldInfoForm
+                  seed={seed}
+                  onSeedChange={setSeed}
+                  edition={edition}
+                  onEditionChange={setEdition}
+                  version={version}
+                  onVersionChange={setVersion}
+                  knownCoords={knownCoords}
+                  onKnownCoordsChange={setKnownCoords}
+                  dimension={dimension}
+                  onDimensionChange={setDimension}
+                />
+              </div>
+
+              {/* Locate Me Action Button */}
+              <div className="pt-4 border-t border-slate-800/80 space-y-3">
+                <button
+                  type="button"
+                  disabled={!screenshot || isAnalyzing}
+                  onClick={handleStartAnalysis}
+                  className={`w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 shadow-xl cursor-pointer ${
+                    screenshot && !isAnalyzing
+                      ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-950/60 border border-emerald-400/40 hover:scale-[1.01] active:scale-[0.99]'
+                      : 'bg-slate-800/60 border border-slate-700/50 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="w-5 h-5" />
+                      <span>Locate Me</span>
+                    </>
+                  )}
+                </button>
+
+                {!screenshot && (
+                  <p className="text-[11px] text-center text-slate-400">
+                    Please upload a screenshot or pick a demo preset above to activate analysis.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ) : isAnalyzing ? (
-        <AnalysisProgress />
-      ) : result ? (
-        <ResultPanel
-          result={result}
-          onReset={handleReset}
-          onOpenSeedGuide={onOpenSeedGuide}
-          onShowToast={onShowToast}
-        />
-      ) : null}
+        ) : isAnalyzing ? (
+          <AnalysisProgress />
+        ) : result ? (
+          <ResultPanel
+            result={result}
+            onReset={handleReset}
+            onOpenSeedGuide={onOpenSeedGuide}
+            onShowToast={onShowToast}
+          />
+        ) : null
+      )}
     </section>
   );
 };
+

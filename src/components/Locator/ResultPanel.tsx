@@ -20,7 +20,10 @@ import { WorldMapCanvas } from './WorldMapCanvas';
 import { FeatureAnalysisTags } from './FeatureAnalysisTags';
 import { CommandsModal } from './CommandsModal';
 import { InconclusiveCard } from './InconclusiveCard';
+import { BedrockOrientationInspector } from './BedrockOrientationInspector';
+import { BedrockGridCrackerModal } from './BedrockGridCrackerModal';
 import { exportReportAsJson } from '../../utils/exportReport';
+import { calculateChunkInfo, generateMinecraftCommands } from '../../utils/minecraftCoords';
 
 interface ResultPanelProps {
   result: LocatorResult;
@@ -41,6 +44,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
     initialCandidate || null
   );
   const [commandsModalOpen, setCommandsModalOpen] = useState(false);
+  const [gridCrackerOpen, setGridCrackerOpen] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -98,6 +102,35 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
       setTimeout(() => setIsExporting(false), 1500);
     }
   };
+
+  const handleUpdateCandidateCoords = (newCoords: {
+    x: number;
+    y: number;
+    z: number;
+    facing: string;
+    facingAngleDeg: number;
+  }) => {
+    if (!activeCandidate) return;
+    const updated: CoordinateCandidate = {
+      ...activeCandidate,
+      x: newCoords.x,
+      y: newCoords.y,
+      z: newCoords.z,
+      facing: newCoords.facing,
+      facingAngleDeg: newCoords.facingAngleDeg,
+      chunk: calculateChunkInfo(newCoords.x, newCoords.z),
+      distanceFromSpawn: Math.round(Math.hypot(newCoords.x, newCoords.z)),
+      elevationDescription: `Y: ${newCoords.y}`,
+    };
+    setActiveCandidate(updated);
+  };
+
+  // Determine if bedrock inspection should be active
+  const isBedrock =
+    Boolean(result.bedrockAnalysis?.isBedrockDetected) ||
+    activeCandidate.y >= 120 ||
+    activeCandidate.biome.toLowerCase().includes('nether') ||
+    result.features.some((f) => f.name.toLowerCase().includes('bedrock'));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -229,6 +262,17 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
             <span>{isExporting ? 'Exporting...' : 'Export JSON'}</span>
           </button>
 
+          {/* Bedrock Grid & F3 Solver Quick Button */}
+          <button
+            type="button"
+            onClick={() => setGridCrackerOpen(true)}
+            className="px-4 py-3 rounded-xl font-medium text-xs sm:text-sm text-purple-300 hover:text-purple-200 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 hover:border-purple-400 transition-all flex items-center justify-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            title="Öffne den 2D Bedrock-Pattern-Cracker oder F3 Debug-Text-Parser"
+          >
+            <Compass className="w-4 h-4 text-purple-400" />
+            <span>Bedrock Grid & F3 Solver</span>
+          </button>
+
           {/* More Commands Drawer */}
           <button
             type="button"
@@ -263,6 +307,19 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
         />
       )}
 
+      {/* Bedrock Orientation & Direction Inspector */}
+      {isBedrock && (
+        <BedrockOrientationInspector
+          bedrockAnalysis={result.bedrockAnalysis}
+          seed={result.seedUsed || ''}
+          activeCandidate={activeCandidate}
+          dimension={result.bedrockAnalysis?.dimension || (activeCandidate.y >= 120 ? 'nether' : 'overworld')}
+          onUpdateCandidateCoords={handleUpdateCandidateCoords}
+          onOpenGridCracker={() => setGridCrackerOpen(true)}
+          onShowToast={onShowToast}
+        />
+      )}
+
       {/* World Map Canvas */}
       <WorldMapCanvas
         candidate={activeCandidate}
@@ -290,6 +347,26 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
         z={activeCandidate.z}
         edition={result.edition}
         onCopy={onShowToast}
+      />
+
+      {/* Bedrock 2D Grid Cracker & F3 Solver Modal */}
+      <BedrockGridCrackerModal
+        isOpen={gridCrackerOpen}
+        onClose={() => setGridCrackerOpen(false)}
+        seed={result.seedUsed || ''}
+        dimension={result.bedrockAnalysis?.dimension || (activeCandidate.y >= 120 ? 'nether' : 'overworld')}
+        activeCandidate={activeCandidate}
+        onApplyCoordinates={(coords) => {
+          handleUpdateCandidateCoords({
+            x: coords.x,
+            y: coords.y,
+            z: coords.z,
+            facing: activeCandidate.facing,
+            facingAngleDeg: activeCandidate.facingAngleDeg,
+          });
+          onShowToast(`Exakte Koordinaten X: ${coords.x}, Y: ${coords.y}, Z: ${coords.z} angewendet!`, 'success');
+        }}
+        onShowToast={onShowToast}
       />
     </div>
   );

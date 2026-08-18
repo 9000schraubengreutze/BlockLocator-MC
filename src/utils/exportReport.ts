@@ -1,4 +1,4 @@
-import { LocatorResult, CoordinateCandidate } from '../types/locator';
+import type { LocatorResult, CoordinateCandidate } from '../types/locator.ts';
 
 /**
  * Generates and downloads a well-structured JSON report file of the detected location and features.
